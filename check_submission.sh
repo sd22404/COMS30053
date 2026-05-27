@@ -17,8 +17,8 @@ module list |& tail -n +2
 echo "Unloading all modules"
 module purge
 
-echo "Loading default compilers PrgEnv-gnu"
-module load PrgEnv-gnu
+echo "Loading default cuda module"
+module load libs/cuda/10.0-gcc-5.4.0-2.26
 
 if [ -r "$ENV" ]; then
     echo "Sourcing $ENV"

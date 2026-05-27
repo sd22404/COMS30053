@@ -7,6 +7,10 @@ Base coursework for the Advanced High Performance Computing class.
 
 ## Compiling and running
 
+You will need to load a CUDA module to compile OpenCL programs:
+
+    module load libs/cuda/10.0-gcc-5.4.0-2.26
+
 To compile type `make`. Editing the values for `CC` and `CFLAGS` in the Makefile can be used to enable different compiler options or use a different compiler. These can also be passed on the command line:
 
     $ make CFLAGS="-O3 -fopenmp -DDEBUG"
@@ -87,7 +91,6 @@ If the submission checking script prints any errors, you should try to address t
 
 Note that `check_submission.sh` does _not_ run your code, and so you _cannot_ verify that the results produced by your application validate just by running this script. You should check the correctness of your results separately, e.g. using `make check`.
 
-
 # Serial output for sample inputs
 Run times were taken on a Phase 4 node using the base (gcc) compiler and base compiler flags as found in the Makefile:
 
@@ -104,6 +107,7 @@ Elapsed Total time:                     32.715462 (s)
 
 - 128x256
 ```
+./d2q9-bgk  input_128x256.params obstacles_128x256.dat
 ==done==
 Reynolds number:                3.715003967285E+01
 Elapsed Init time:                      0.026452 (s)

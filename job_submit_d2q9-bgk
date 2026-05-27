@@ -1,12 +1,14 @@
 #!/bin/bash
 
 #SBATCH --job-name=d2q9-bgk
+#SBATCH --account=COSC024002
+#SBATCH --reservation=COSC024002GPU
+#SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --time=00:10:00
+#SBATCH --gres=gpu:1
+#SBATCH --time=00:30:00
 #SBATCH --output=d2q9-bgk.out
-#SBATCH --exclusive 
+#SBATCH --exclusive
 
 echo Running on host `hostname`
 echo Time is `date`
@@ -14,11 +16,13 @@ echo Directory is `pwd`
 echo Slurm job ID is $SLURM_JOB_ID
 echo This job runs on the following machines:
 echo `echo $SLURM_JOB_NODELIST | uniq`
+echo GPU number: $CUDA_VISIBLE_DEVICES
 
 GRID=128x128
 #GRID=128x256
 #GRID=256x256
 #GRID=1024x1024
+export OCL_DEVICE=1
 
 #! Run the executable
 ./d2q9-bgk input_$GRID.params obstacles_$GRID.dat
