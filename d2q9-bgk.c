@@ -60,6 +60,105 @@
 #define FINALSTATEFILE  "final_state.dat"
 #define AVVELSFILE      "av_vels.dat"
 
+#define PROCESS_CELL()                                       \
+do {                                                         \
+  int idx    = y   + ii;                                     \
+  int idx_w  = y   + x_w;                                    \
+  int idx_e  = y   + x_e;                                    \
+  int idx_s  = y_s + ii;                                     \
+  int idx_n  = y_n + ii;                                     \
+  int idx_sw = y_s + x_w;                                    \
+  int idx_se = y_s + x_e;                                    \
+  int idx_ne = y_n + x_e;                                    \
+  int idx_nw = y_n + x_w;                                    \
+                                                             \
+  float tmp0 = s0[idx];                                      \
+  float tmp1 = s1[idx_w];                                    \
+  float tmp2 = s2[idx_s];                                    \
+  float tmp3 = s3[idx_e];                                    \
+  float tmp4 = s4[idx_n];                                    \
+  float tmp5 = s5[idx_sw];                                   \
+  float tmp6 = s6[idx_se];                                   \
+  float tmp7 = s7[idx_ne];                                   \
+  float tmp8 = s8[idx_nw];                                   \
+                                                             \
+  if (obs[idx])                                              \
+  {                                                          \
+    t0[idx] = tmp0;                                          \
+    t1[idx] = tmp3;                                          \
+    t2[idx] = tmp4;                                          \
+    t3[idx] = tmp1;                                          \
+    t4[idx] = tmp2;                                          \
+    t5[idx] = tmp7;                                          \
+    t6[idx] = tmp8;                                          \
+    t7[idx] = tmp5;                                          \
+    t8[idx] = tmp6;                                          \
+  }                                                          \
+  else                                                       \
+  {                                                          \
+    float local_density = tmp0 + tmp1 + tmp2 + tmp3 + tmp4   \
+                        + tmp5 + tmp6 + tmp7 + tmp8;         \
+                                                             \
+    float u_x = (tmp1 + tmp5 + tmp8 - (tmp3 + tmp6 + tmp7))  \
+              / local_density;                               \
+                                                             \
+    float u_y = (tmp2 + tmp5 + tmp6 - (tmp4 + tmp7 + tmp8))  \
+              / local_density;                               \
+                                                             \
+    float u_sq = u_x * u_x + u_y * u_y;                      \
+                                                             \
+    float u1 =   u_x;                                        \
+    float u2 =         u_y;                                  \
+    float u3 = - u_x;                                        \
+    float u4 =       - u_y;                                  \
+    float u5 =   u_x + u_y;                                  \
+    float u6 = - u_x + u_y;                                  \
+    float u7 = - u_x - u_y;                                  \
+    float u8 =   u_x - u_y;                                  \
+                                                             \
+    float d_equ0 = w0 * local_density * (1.f - c3 * u_sq);   \
+                                                             \
+    float d_equ1 = w1 * local_density * (1.f + c1 * u1       \
+                                      + c2 * u1 * u1         \
+                                      - c3 * u_sq);          \
+    float d_equ2 = w1 * local_density * (1.f + c1 * u2       \
+                                      + c2 * u2 * u2         \
+                                      - c3 * u_sq);          \
+    float d_equ3 = w1 * local_density * (1.f + c1 * u3       \
+                                      + c2 * u3 * u3         \
+                                      - c3 * u_sq);          \
+    float d_equ4 = w1 * local_density * (1.f + c1 * u4       \
+                                      + c2 * u4 * u4         \
+                                      - c3 * u_sq);          \
+                                                             \
+    float d_equ5 = w2 * local_density * (1.f + c1 * u5       \
+                                      + c2 * u5 * u5         \
+                                      - c3 * u_sq);          \
+    float d_equ6 = w2 * local_density * (1.f + c1 * u6       \
+                                      + c2 * u6 * u6         \
+                                      - c3 * u_sq);          \
+    float d_equ7 = w2 * local_density * (1.f + c1 * u7       \
+                                      + c2 * u7 * u7         \
+                                      - c3 * u_sq);          \
+    float d_equ8 = w2 * local_density * (1.f + c1 * u8       \
+                                      + c2 * u8 * u8         \
+                                      - c3 * u_sq);          \
+                                                             \
+    t0[idx] = tmp0 + omega * (d_equ0 - tmp0);                \
+    t1[idx] = tmp1 + omega * (d_equ1 - tmp1);                \
+    t2[idx] = tmp2 + omega * (d_equ2 - tmp2);                \
+    t3[idx] = tmp3 + omega * (d_equ3 - tmp3);                \
+    t4[idx] = tmp4 + omega * (d_equ4 - tmp4);                \
+    t5[idx] = tmp5 + omega * (d_equ5 - tmp5);                \
+    t6[idx] = tmp6 + omega * (d_equ6 - tmp6);                \
+    t7[idx] = tmp7 + omega * (d_equ7 - tmp7);                \
+    t8[idx] = tmp8 + omega * (d_equ8 - tmp8);                \
+                                                             \
+    tot_u += sqrtf(u_sq);                                    \
+    ++tot_cells;                                             \
+  }                                                          \
+} while (0)
+
 /* struct to hold the parameter values */
 typedef struct
 {
@@ -71,12 +170,6 @@ typedef struct
   float accel;         /* density redistribution */
   float omega;         /* relaxation parameter */
 } t_param;
-
-/* struct to hold the 'speed' values */
-typedef struct
-{
-  float speeds[NSPEEDS];
-} t_speed;
 
 typedef struct
 {
@@ -200,14 +293,16 @@ int main(int argc, char* argv[])
 
 float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obstacles)
 {
-  const float c_sq = 1.f / 3.f; /* square of speed of sound */
+  accelerate_flow(params, cells, obstacles);
+
+  // const float c_sq = 1.f / 3.f; /* square of speed of sound */
   const float w0 = 4.f / 9.f;  /* weighting factor */
   const float w1 = 1.f / 9.f;  /* weighting factor */
   const float w2 = 1.f / 36.f; /* weighting factor */
 
-  const float c1 = 1.f / c_sq;
-  const float c2 = 1.f / (2.f * c_sq * c_sq);
-  const float c3 = 1.f / (2.f * c_sq);
+  const float c1 = 3.f; // 1.f / c_sq;
+  const float c2 = 4.5f; // 1.f / (2.f * c_sq * c_sq);
+  const float c3 = 1.5f; // 1.f / (2.f * c_sq);
 
   float tot_u = 0.f;
   int tot_cells = 0;
@@ -238,155 +333,38 @@ float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obst
 
   const int* restrict obs = obstacles;
 
-  accelerate_flow(params, cells, obstacles);
-
   /* loop over the cells in the grid */
   for (int jj = 0; jj < ny; jj++)
   {
-    for (int ii = 0; ii < nx; ii++)
+    int y = jj * nx;
+    int y_n = ((jj + 1 == ny) ? 0 : jj + 1) * nx;
+    int y_s = ((jj == 0) ? ny - 1 : jj - 1) * nx;
+
+    {
+      int ii = 0;
+      int x_e = 1;
+      int x_w = nx - 1;
+
+      PROCESS_CELL();
+    }
+
+    for (int ii = 1; ii < nx - 1; ii++)
     {
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
-      int y_n = (jj + 1) % ny;
-      int x_e = (ii + 1) % nx;
-      int y_s = (jj == 0) ? (jj + ny - 1) : (jj - 1);
-      int x_w = (ii == 0) ? (ii + nx - 1) : (ii - 1);
 
-      /* propagate densities from neighbouring cells, following
-      ** appropriate directions of travel and writing into
-      ** scratch space grid */
+      int x_e = ii + 1;
+      int x_w = ii - 1;
 
-      int idx   = ii  + jj  * nx;
-      int idx_w = x_w + jj  * nx;
-      int idx_e = x_e + jj  * nx;
-      int idx_s = ii  + y_s * nx;
-      int idx_n = ii  + y_n * nx;
+      PROCESS_CELL();
+    }
 
-      int idx_ws = x_w + y_s * nx;
-      int idx_es = x_e + y_s * nx;
-      int idx_en = x_e + y_n * nx;
-      int idx_wn = x_w + y_n * nx;
+    {
+      int ii = nx - 1;
+      int x_e = 0;
+      int x_w = nx - 2;
 
-      float tmp0 = s0[idx];
-      float tmp1 = s1[idx_w];
-      float tmp2 = s2[idx_s];
-      float tmp3 = s3[idx_e];
-      float tmp4 = s4[idx_n];
-      float tmp5 = s5[idx_ws];
-      float tmp6 = s6[idx_es];
-      float tmp7 = s7[idx_en];
-      float tmp8 = s8[idx_wn];
-
-      /* if the cell contains an obstacle */
-      if (obs[jj * nx + ii])
-      {
-        /* called after propagate, so taking values from scratch space
-        ** mirroring, and writing into main grid */
-        t0[idx] = tmp0;
-        t1[idx] = tmp3;
-        t2[idx] = tmp4;
-        t3[idx] = tmp1;
-        t4[idx] = tmp2;
-        t5[idx] = tmp7;
-        t6[idx] = tmp8;
-        t7[idx] = tmp5;
-        t8[idx] = tmp6;
-      } else {
-        /* compute local density total */
-        float local_density = tmp0 + tmp1 + tmp2 + tmp3 + tmp4 + tmp5 + tmp6 + tmp7 + tmp8;
-
-        /* compute x velocity component */
-        float u_x = (tmp1
-                      + tmp5
-                      + tmp8
-                      - (tmp3
-                         + tmp6
-                         + tmp7))
-                     / local_density;
-        /* compute y velocity component */
-        float u_y = (tmp2
-                      + tmp5
-                      + tmp6
-                      - (tmp4
-                         + tmp7
-                         + tmp8))
-                     / local_density;
-
-        /* velocity squared */
-        float u_sq = u_x * u_x + u_y * u_y;
-
-        /* directional velocity components */
-        float u1 =   u_x;        /* east */
-        float u2 =         u_y;  /* north */
-        float u3 = - u_x;        /* west */
-        float u4 =       - u_y;  /* south */
-        float u5 =   u_x + u_y;  /* north-east */
-        float u6 = - u_x + u_y;  /* north-west */
-        float u7 = - u_x - u_y;  /* south-west */
-        float u8 =   u_x - u_y;  /* south-east */
-
-        /* equilibrium densities */
-        /* zero velocity density: weight w0 */
-        float d_equ0 = w0 * local_density * (1.f - c3 * u_sq);
-        /* axis speeds: weight w1 */
-        float d_equ1 = w1 * local_density * (c1 * u1 + 1.f
-                                          + c2 * u1 * u1
-                                          - c3 * u_sq);
-        float d_equ2 = w1 * local_density * (c1 * u2 + 1.f
-                                          + c2 * u2 * u2
-                                          - c3 * u_sq);
-        float d_equ3 = w1 * local_density * (c1 * u3 + 1.f
-                                          + c2 * u3 * u3
-                                          - c3 * u_sq);
-        float d_equ4 = w1 * local_density * (c1 * u4 + 1.f
-                                          + c2 * u4 * u4
-                                          - c3 * u_sq);
-        /* diagonal speeds: weight w2 */
-        float d_equ5 = w2 * local_density * (c1 * u5 + 1.f
-                                          + c2 * u5 * u5
-                                          - c3 * u_sq);
-        float d_equ6 = w2 * local_density * (c1 * u6 + 1.f
-                                          + c2 * u6 * u6
-                                          - c3 * u_sq);
-        float d_equ7 = w2 * local_density * (c1 * u7 + 1.f
-                                          + c2 * u7 * u7
-                                          - c3 * u_sq);
-        float d_equ8 = w2 * local_density * (c1 * u8 + 1.f
-                                          + c2 * u8 * u8
-                                          - c3 * u_sq);
-
-        /* relaxation step */
-        t0[idx] = tmp0
-                  + omega
-                  * (d_equ0 - tmp0);
-        t1[idx] = tmp1
-                  + omega
-                  * (d_equ1 - tmp1);
-        t2[idx] = tmp2
-                  + omega
-                  * (d_equ2 - tmp2);
-        t3[idx] = tmp3
-                  + omega
-                  * (d_equ3 - tmp3);
-        t4[idx] = tmp4
-                  + omega
-                  * (d_equ4 - tmp4);
-        t5[idx] = tmp5
-                  + omega
-                  * (d_equ5 - tmp5);
-        t6[idx] = tmp6
-                  + omega
-                  * (d_equ6 - tmp6);
-        t7[idx] = tmp7
-                  + omega
-                  * (d_equ7 - tmp7);
-        t8[idx] = tmp8
-                  + omega
-                  * (d_equ8 - tmp8);
-
-        tot_u += sqrtf(u_sq);
-        ++tot_cells;
-      }
+      PROCESS_CELL();
     }
   }
 
