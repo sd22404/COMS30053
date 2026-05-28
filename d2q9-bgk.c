@@ -249,6 +249,7 @@ int timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obstac
       {
         /* called after propagate, so taking values from scratch space
         ** mirroring, and writing into main grid */
+        tmp_cells->speeds[0][idx] = tmp0;
         tmp_cells->speeds[1][idx] = tmp3;
         tmp_cells->speeds[2][idx] = tmp4;
         tmp_cells->speeds[3][idx] = tmp1;
