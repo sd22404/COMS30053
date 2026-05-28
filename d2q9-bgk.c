@@ -195,7 +195,7 @@ int accelerate_flow(const t_param params, t_grid* cells, int* obstacles);
 int write_values(const t_param params, t_grid* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
-int finalise(const t_param* params, t_grid** cells_ptr, t_grid** tmp_cells_ptr,
+int finalise(t_grid** cells_ptr, t_grid** tmp_cells_ptr,
              int** obstacles_ptr, float** av_vels_ptr);
 
 /* Sum all the densities in the grid.
@@ -286,7 +286,7 @@ int main(int argc, char* argv[])
   printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc  - col_tic);
   printf("Elapsed Total time:\t\t\t%.6lf (s)\n",   tot_toc  - tot_tic);
   write_values(params, cells, obstacles, av_vels);
-  finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+  finalise(&cells, &tmp_cells, &obstacles, &av_vels);
 
   return EXIT_SUCCESS;
 }
@@ -350,9 +350,6 @@ float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obst
 
     for (int ii = 1; ii < nx - 1; ii++)
     {
-      /* determine indices of axis-direction neighbours
-      ** respecting periodic boundary conditions (wrap around) */
-
       int x_e = ii + 1;
       int x_w = ii - 1;
 
@@ -620,7 +617,7 @@ int initialise(const char* paramfile, const char* obstaclefile,
   return EXIT_SUCCESS;
 }
 
-int finalise(const t_param* params, t_grid** cells_ptr, t_grid** tmp_cells_ptr,
+int finalise(t_grid** cells_ptr, t_grid** tmp_cells_ptr,
              int** obstacles_ptr, float** av_vels_ptr)
 {
   /*
