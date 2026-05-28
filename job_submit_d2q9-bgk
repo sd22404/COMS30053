@@ -22,6 +22,6 @@ GRID=128x128
 #GRID=1024x1024
 
 #! Run the executable
+# perf stat -e cycles,instructions,cache-references,cache-misses --
 ./d2q9-bgk input_$GRID.params obstacles_$GRID.dat
 make check REF_AV_VELS_FILE=check/$GRID.av_vels.dat REF_FINAL_STATE_FILE=check/$GRID.final_state.dat
-

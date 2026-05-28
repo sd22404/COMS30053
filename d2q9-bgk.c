@@ -348,6 +348,7 @@ float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obst
       PROCESS_CELL();
     }
 
+    #pragma omp simd reduction(+:tot_u, tot_cells)
     for (int ii = 1; ii < nx - 1; ii++)
     {
       int x_e = ii + 1;
