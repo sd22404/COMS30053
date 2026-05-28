@@ -334,6 +334,7 @@ float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obst
   const int* restrict obs = obstacles;
 
   /* loop over the cells in the grid */
+  #pragma omp parallel for reduction(+:tot_u, tot_cells)
   for (int jj = 0; jj < ny; jj++)
   {
     int y = jj * nx;
@@ -348,7 +349,7 @@ float timestep(const t_param params, t_grid* cells, t_grid* tmp_cells, int* obst
       PROCESS_CELL();
     }
 
-    #pragma omp simd reduction(+:tot_u, tot_cells)
+    // #pragma omp simd reduction(+:tot_u, tot_cells)
     for (int ii = 1; ii < nx - 1; ii++)
     {
       int x_e = ii + 1;
